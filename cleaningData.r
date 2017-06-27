@@ -1,5 +1,6 @@
 install.packages("kernlab")
 library(kernlab)
+install.packages('readr')
 library(readr)
 
 # Upload data as object
