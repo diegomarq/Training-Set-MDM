@@ -59,7 +59,6 @@ library(stringr)
 sum(grepl("\n", dadosLinear$title))
 sum(grepl("\n", dadosLinear$body))
 
-
 dadosLinear[grepl("[()]", dadosLinear$title),]
 # Remove words between parentheses in title
 dadosLinear$title <- gsub("\\s*\\([^\\]+\\)", "", dadosLinear$title)
@@ -70,4 +69,42 @@ grep("[()]", dadosLinear$body)
 # Remove parentheses from body
 dadosLinear$body <- gsub("[(|)]", "", dadosLinear$body)
 
+dadosS <- dadosLinear
 
+# Get last word
+# dadosS$vehicle <- str_extract(dadosS$vehicle, '\\w+$')
+# rg_dadosT <- tail(strsplit(paste(dadosT$vehicle, ""), '-')[[1]],1)
+
+####
+# Update R version
+# insert link in sources.list at etc/apt
+# deb https://cran.rstudio.com/bin/linux/ubuntu xenial/
+# sudo apt-get remove r-base-core
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB
+# sudo add-apt-repository ppa:marutter/rdev
+# sudo add-apt update
+# sudo apt-get install r-base
+# sudo apt-get install r-base-dev
+
+### Start test of sentiment analysis
+
+# Install dependencies
+install.packages("tm")
+install.packages("RTextTools")
+library("RTextTools")
+install.packages("caret")
+library("caret")
+
+set.seed(101)
+
+### Shuffle data
+
+dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNumbers=TRUE,
+                             stemWords=TRUE, removeSparseTerms=.998, toLower = TRUE, removeStopwords = TRUE)
+
+### Test word cloud
+install.packages("wordcloud")
+library(wordcloud)
+library(RColorBrewer)
+
+palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
