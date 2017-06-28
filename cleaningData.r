@@ -62,19 +62,12 @@ sum(grepl("\n", dadosLinear$body))
 
 dadosLinear[grepl("[()]", dadosLinear$title),]
 # Remove words between parentheses in title
-dadosLinear$title <- gsub("\\s*\\([^\\]+\\)", "", dados$title)
+dadosLinear$title <- gsub("\\s*\\([^\\]+\\)", "", dadosLinear$title)
 
 # Verify words between parenthes in body
 grep("[()]", dadosLinear$body)
 
 # Remove parentheses from body
-dadosLinear$body <- gsub("[(|)]", "", dados$body)
+dadosLinear$body <- gsub("[(|)]", "", dadosLinear$body)
 
-# Remove pontuaction
-sum(grepl("/", dadosLinear$body))
-
-
-
-# if there are, then
-# dadosLinear$title <- gsub("[\n]", "", dadosLinear$title)
 
