@@ -80,11 +80,60 @@ dadosS <- dadosLinear
 # insert link in sources.list at etc/apt
 # deb https://cran.rstudio.com/bin/linux/ubuntu xenial/
 # sudo apt-get remove r-base-core
-# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB
+# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
 # sudo add-apt-repository ppa:marutter/rdev
-# sudo add-apt update
+# sudo apt-apt update
 # sudo apt-get install r-base
 # sudo apt-get install r-base-dev
+
+
+######## Test word cloud
+
+library(tm)
+install.packages("wordcloud")
+library(wordcloud)
+library(RColorBrewer)
+dadosTeste <- dadosLinear
+
+# Create corpus
+dadosCorpus <- Corpus(VectorSource(dadosTeste$body))
+
+# Remove whitespace
+dadosCorpus <- tm_map(dadosCorpus, stripWhitespace)
+
+# Converto letter for lowercase
+dadosCorpus <- tm_map(dadosCorpus, tolower)
+
+# Remove punctuation
+dadosCorpus <- tm_map(dadosCorpus, removePunctuation)
+
+# Remove stopwords
+dadosCorpus <- tm_map(dadosCorpus, removeWords, stopwords("portuguese"))
+
+# Remove numbers
+dadosCorpus <- tm_map(dadosCorpus, removeNumbers)
+
+# Term document matrix
+dadosTDMatrix <- TermDocumentMatrix(dadosCorpus)
+
+# Matrix
+dadosMatrix <- as.matrix(dadosTDMatrix)
+
+# Frequency
+dadosWordFreq <- sort(rowSums(dadosMatrix), decreasing = TRUE)
+
+# Define limit by frequency
+dadosLimit <- quantile(dadosWordFreq, probs = 0.25)
+
+# Limit words
+dadosTopFreq <- dadosWordFreq[dadosWordFreq > dadosLimit]
+
+# Create Data Frame with words and its frequency
+dadosDataFrame <- data.frame(word = names(dadosTopFreq), freq = dadosTopFreq)
+
+# plot wordcloud
+wordcloud(dadosDataFrame$word, dadosDataFrame$freq, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
+
 
 ### Start test of sentiment analysis
 
@@ -95,16 +144,44 @@ library("RTextTools")
 install.packages("caret")
 library("caret")
 
+install.packages("tidytext")
+library(tidytext)
+
 set.seed(101)
+
+# Load SentiLex-PT base as data frame
+sentiWords <- readLines("~/Documents/Training-Set-MDM/SentiLex-lem-PT02.txt")
+sentiWords <- strsplit(sentiWords, "\\s*\\;")
+
+# Create columns from substrings
+colA <- c()
+colB <- c()
+colC <- c()
+colD <- c()
+for(i in 1:length(sentiWords)) {
+  colA <- c(colA, sentiWords[[i]][1])
+  colB <- c(colB, sentiWords[[i]][2])
+  colC <- c(colC, sentiWords[[i]][3])
+  colD <- c(colD, sentiWords[[i]][4])
+}
+
+# names
+colA.1 <- colA
+colA <- gsub("\\.\\S+", "", colA)
+# type
+colA.1 <- gsub("\\S+\\=", "", colA.1)
+# polarity
+colC <- gsub("\\S+\\=", "", colC)
+# Create data frame
+dadosSentiWords <- data.frame(name=colA, type=colA.1, pol=colC)
+# Remove NA row
+row_has_na <- apply(dadosSentiWords, 1, function(x){any(is.na(x))})
+dadosSentiWords <- dadosSentiWords[!row_has_na,]
 
 ### Shuffle data
 
 dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNumbers=TRUE,
                              stemWords=TRUE, removeSparseTerms=.998, toLower = TRUE, removeStopwords = TRUE)
 
-### Test word cloud
-install.packages("wordcloud")
-library(wordcloud)
-library(RColorBrewer)
 
 palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
