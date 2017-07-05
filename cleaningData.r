@@ -112,7 +112,7 @@ dadosDFTrain <- head(dadosDF, nrow(dadosLinear[700,])) # 70%
 dadosDFTest <- head(dadosDF, nrow(dadosLinear[300,])) # 30%
 
 
-
+# Add to 
 
 # Frequency
 #dadosWordFreq <- sort(rowSums(dadosMatrix), decreasing = TRUE)
@@ -138,9 +138,12 @@ library("RTextTools")
 #library(tidytext)
 
 # Using Bag of words, from:
-# https://www.codementor.io/jadianes/data-science-python-r-sentiment-classification-machine-learning-du107otfg
+#(not) https://www.codementor.io/jadianes/data-science-python-r-sentiment-classification-machine-learning-du107otfg
+# https://stackoverflow.com/questions/32395098/r-sentiment-analysis-with-phrases-in-dictionaries?rq=1
 
-# Load SentiLex-PT base as data frame
+# Preparing dictonary as data frame
+# Load SentiLex-PT base
+
 sentiWords <- readLines("~/Documents/Training-Set-MDM/SentiLex-lem-PT02.txt")
 sentiWords <- strsplit(sentiWords, "\\s*\\;")
 # Create columns from substrings
@@ -154,13 +157,31 @@ for(i in 1:length(sentiWords)) {
   colC <- c(colC, sentiWords[[i]][3])
   colD <- c(colD, sentiWords[[i]][4])
 }
-# names
 colA.1 <- colA
-colA <- gsub("\\.\\S+", "", colA)
-# type
-colA.1 <- gsub("\\S+\\=", "", colA.1)
-# polarity
-colC <- gsub("\\S+\\=", "", colC)
+colA <- gsub("\\.\\S+", "", colA) # names
+colA.1 <- gsub("\\S+\\=", "", colA.1) # type
+colC <- gsub("\\S+\\=", "", colC) # polarity
+
+n <- colA[!is.na(colA)]
+p <- colC[!is.na(colC)]
+
+pos.words <- c()
+for(i in 1:length(p)) { 
+  if(p[i] == "1") {
+    pos.words <- c(pos.words, n[i])
+  }
+}
+
+neg.words <- c()
+for(i in 1:length(p)) { 
+  if(p[i] == "-1") {
+    neg.words <- c(neg.words, n[i])
+  }
+}
+n <- NULL
+p <- NULL
+i <- NULL
+
 # Create data frame
 dadosSentiWords <- data.frame(name=colA, type=colA.1, pol=colC)
 colA.1 <- NULL; colA <- NULL; colB <- NULL; colC <- NULL; colD <- NULL
@@ -168,6 +189,54 @@ colA.1 <- NULL; colA <- NULL; colB <- NULL; colC <- NULL; colD <- NULL
 row_has_na <- apply(dadosSentiWords, 1, function(x){any(is.na(x))})
 dadosSentiWords <- dadosSentiWords[!row_has_na,]
 row_has_na <- NULL
+
+# Make score function to compare matches from database and SentiLex-PT
+
+# test
+vDadosLinearTit <- as.vector(dadosLinear$title)
+
+score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
+{
+  require(plyr)
+  require(stringr)
+  
+  # we got a vector of sentences. plyr will handle a list or a vector as an "l" for us
+  # we want a simple array of scores back, so we use "l" + "a" + "ply" = laply:
+  scores = laply(sentences, function(sentence, pos.words, neg.words) {
+    
+    # clean up sentences with R's regex-driven global substitute, gsub():
+    sentence = gsub('[[:punct:]]', '', sentence)
+    sentence = gsub('[[:cntrl:]]', '', sentence)
+    sentence = gsub('\\d+', '', sentence)
+    # and convert to lower case:
+    sentence = tolower(sentence)
+    
+    # split into words. str_split is in the stringr package
+    word.list = str_split(sentence, '\\s+')
+    # sometimes a list() is one level of hierarchy too much
+    words = unlist(word.list)
+    
+    # compare our words to the dictionaries of positive & negative terms
+    pos.matches = match(words, pos.words)
+    neg.matches = match(words, neg.words)
+    
+    # match() returns the position of the matched term or NA
+    # we just want a TRUE/FALSE:
+    pos.matches = !is.na(pos.matches)
+    neg.matches = !is.na(neg.matches)
+    
+    # and conveniently enough, TRUE/FALSE will be treated as 1/0 by sum():
+    score = sum(pos.matches) - sum(neg.matches)
+    
+    return(score)
+  }, pos.words, neg.words, .progress=.progress )
+  
+  scores.df = data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+
+analysis <- score.sentiment(vDadosLinearTit, pos.words, neg.words)
+table(analysis$text)
 
 set.seed(1234)
 
