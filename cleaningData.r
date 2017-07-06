@@ -6,11 +6,11 @@ library(kernlab)
 library(readr)
 
 # Upload data as object
-dadosLinear <- read_delim("~/Documents/Training-Set-MDM/dadosLinear.csv", 
+data <- read_delim("~/Documents/Training-Set-MDM/noticias_2008.csv", 
                           ";", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
 
 # Data to test
-dadosLinear <- dadosLinear[1:1000,]
+data_to_test <- data[1:1000,]
 
 # Object dimension
 #dim(dadosLinear)
@@ -22,28 +22,28 @@ dadosLinear <- dadosLinear[1:1000,]
 #tail(dadosLinear)
 
 # Drop columns
-dadosLinear <- dadosLinear[,c("X3", "X5", "X8", "X9", "X11")]
+data_to_test <- data_to_test[,c("X2", "X3", "X4", "X5", "X6", "X7", "X9", "X10")]
 # Rename columns
-dadosLinear <- setNames(dadosLinear, c("date", "title", "vehicle", "category", "body"))
+data_to_test <- setNames(data_to_test, c("date", "title", "vehicle", "uf", "nacional", "category", "qtd_client", "news"))
 # Verify rows with na value
-row_has_na <- apply(dadosLinear, 1, function(x){any(is.na(x))})
+row_has_na <- apply(data_to_test, 1, function(x){any(is.na(x))})
 # Number of rows with na
 #sum(row_has_na)
 # Get data frame without na rows
-dadosLinear <- dadosLinear[!row_has_na,]
+data_to_test <- data_to_test[!row_has_na,]
 row_has_na <- NULL
 # Verify NULL elements
-null_vector <- !grepl("NULL", dadosLinear$category, ignore.case = TRUE)
+null_vector <- !grepl("NULL", data_to_test$category, ignore.case = TRUE)
 #length(null_vector)
 # Select data frame without null element in category row
-dadosLinear<- dadosLinear[null_vector,]
+data_to_test<- data_to_test[null_vector,]
 null_vector <- NULL
 # Count and remove duplicated rows
 #sum(duplicated(dadosLinear))
-dadosLinear <- dadosLinear[!duplicated(dadosLinear),]
+data_to_test <- data_to_test[!duplicated(data_to_test),]
 # Remove quotes
-dadosLinear$title <- gsub("\"", "", dadosLinear$title)
-dadosLinear$body <- gsub("\"", "", dadosLinear$body)
+data_to_test$title <- gsub("\"", "", data_to_test$title)
+data_to_test$news <- gsub("\"", "", data_to_test$news)
 
 # Verify whether exists \n caracter in data
 #install.packages("stringr")
@@ -52,11 +52,11 @@ dadosLinear$body <- gsub("\"", "", dadosLinear$body)
 #sum(grepl("\n", dadosLinear$body))
 #dadosLinear[grepl("[()]", dadosLinear$title),]
 # Remove words between parentheses in title
-dadosLinear$title <- gsub("\\s*\\([^\\]+\\)", "", dadosLinear$title)
+data_to_test$title <- gsub("\\s*\\([^\\]+\\)", "", data_to_test$title)
 # Verify words between parenthes in body
 #grep("[()]", dadosLinear$body)
 # Remove parentheses from body
-dadosLinear$body <- gsub("[(|)]", "", dadosLinear$body)
+data_to_test$news <- gsub("[(|)]", "", data_to_test$news)
 #dadosS <- dadosLinear
 
 # Get last word
@@ -246,3 +246,16 @@ dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNu
 
 
 palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
+
+####################################
+install.packages("httr")
+install.packages("tidyverse")
+install.packages("tidytext")
+
+library("tidyverse")
+library("tidytext")
+
+data_ <- data_to_test
+
+text_tb <- tibble(chapter = seq_along(philosophers_stone),
+                  text = philosophers_stone)
