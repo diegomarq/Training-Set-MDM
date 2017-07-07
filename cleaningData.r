@@ -45,6 +45,16 @@ data_to_test <- data_to_test[!duplicated(data_to_test),]
 data_to_test$title <- gsub("\"", "", data_to_test$title)
 data_to_test$news <- gsub("\"", "", data_to_test$news)
 
+# Remove html tags
+data_to_test$title <- gsub("<.*?>", "", data_to_test$title)
+data_to_test$news <- gsub("<.*?>", "", data_to_test$news)
+
+# Remove UTC from date column
+data_to_test$date <- gsub("UTC", "", data_to_test$date)
+
+# Separe news that appears Lula
+data_to_test.news <- grepl("Lula", data_to_test$news, ignore.case = TRUE)
+
 # Verify whether exists \n caracter in data
 #install.packages("stringr")
 #library(stringr)
@@ -183,11 +193,11 @@ p <- NULL
 i <- NULL
 
 # Create data frame
-dadosSentiWords <- data.frame(name=colA, type=colA.1, pol=colC)
+data_senti <- data.frame(name=colA, type=colA.1, pol=colC)
 colA.1 <- NULL; colA <- NULL; colB <- NULL; colC <- NULL; colD <- NULL
 # Remove NA row
-row_has_na <- apply(dadosSentiWords, 1, function(x){any(is.na(x))})
-dadosSentiWords <- dadosSentiWords[!row_has_na,]
+row_has_na <- apply(data_senti, 1, function(x){any(is.na(x))})
+data_senti <- data_senti[!row_has_na,]
 row_has_na <- NULL
 
 # Make score function to compare matches from database and SentiLex-PT
@@ -195,67 +205,210 @@ row_has_na <- NULL
 # test
 vDadosLinearTit <- as.vector(dadosLinear$title)
 
-score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
-{
-  require(plyr)
-  require(stringr)
+#score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
+#{
+#  require(plyr)
+#  require(stringr)
   
   # we got a vector of sentences. plyr will handle a list or a vector as an "l" for us
   # we want a simple array of scores back, so we use "l" + "a" + "ply" = laply:
-  scores = laply(sentences, function(sentence, pos.words, neg.words) {
+#  scores = laply(sentences, function(sentence, pos.words, neg.words) {
     
     # clean up sentences with R's regex-driven global substitute, gsub():
-    sentence = gsub('[[:punct:]]', '', sentence)
-    sentence = gsub('[[:cntrl:]]', '', sentence)
-    sentence = gsub('\\d+', '', sentence)
+#    sentence = gsub('[[:punct:]]', '', sentence)
+#    sentence = gsub('[[:cntrl:]]', '', sentence)
+#    sentence = gsub('\\d+', '', sentence)
     # and convert to lower case:
-    sentence = tolower(sentence)
+#    sentence = tolower(sentence)
     
     # split into words. str_split is in the stringr package
-    word.list = str_split(sentence, '\\s+')
+#    word.list = str_split(sentence, '\\s+')
     # sometimes a list() is one level of hierarchy too much
-    words = unlist(word.list)
+#    words = unlist(word.list)
     
     # compare our words to the dictionaries of positive & negative terms
-    pos.matches = match(words, pos.words)
-    neg.matches = match(words, neg.words)
+#    pos.matches = match(words, pos.words)
+#    neg.matches = match(words, neg.words)
     
     # match() returns the position of the matched term or NA
     # we just want a TRUE/FALSE:
-    pos.matches = !is.na(pos.matches)
-    neg.matches = !is.na(neg.matches)
+#    pos.matches = !is.na(pos.matches)
+#    neg.matches = !is.na(neg.matches)
     
     # and conveniently enough, TRUE/FALSE will be treated as 1/0 by sum():
-    score = sum(pos.matches) - sum(neg.matches)
+#    score = sum(pos.matches) - sum(neg.matches)
     
-    return(score)
-  }, pos.words, neg.words, .progress=.progress )
+#    return(score)
+#  }, pos.words, neg.words, .progress=.progress )
   
-  scores.df = data.frame(score=scores, text=sentences)
-  return(scores.df)
-}
+#  scores.df = data.frame(score=scores, text=sentences)
+#  return(scores.df)
+#}
 
-analysis <- score.sentiment(vDadosLinearTit, pos.words, neg.words)
-table(analysis$text)
+#analysis <- score.sentiment(vDadosLinearTit, pos.words, neg.words)
+#table(analysis$text)
 
-set.seed(1234)
+#set.seed(1234)
 
 ### Shuffle data
-dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNumbers=TRUE,
-                                    stemWords=TRUE, removeSparseTerms=.998, toLower = TRUE, removeStopwords = TRUE)
+#dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNumbers=TRUE,
+#                                    stemWords=TRUE, removeSparseTerms=.998, toLower = TRUE, removeStopwords = TRUE)
 
 
-palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
+#palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
 
 ####################################
-install.packages("httr")
+
 install.packages("tidyverse")
 install.packages("tidytext")
 
 library("tidyverse")
 library("tidytext")
 
+####################################
+# Temp data set
 data_ <- data_to_test
 
-text_tb <- tibble(chapter = seq_along(philosophers_stone),
-                  text = philosophers_stone)
+# Cleanig the courpus
+cleanCorpus <- function(corpus){
+  
+  corpus.tmp <- tm_map(corpus, content_transformer(tolower))
+  corpus.tmp <- tm_map(corpus.tmp, removePunctuation)
+  corpus.tmp <- tm_map(corpus.tmp, removeNumbers)
+  corpus.tmp <- tm_map(corpus.tmp, removeWords,stopwords("portuguese"))
+  corpus.tmp <- tm_map(corpus.tmp, stemDocument)
+  corpus.tmp <- tm_map(corpus.tmp, stripWhitespace)
+  
+  return(corpus.tmp)
+}
+
+corpus_ <- Corpus(VectorSource(data_$news), readerControl =  list(reader=readPlain))
+cln.corpus_ <- cleanCorpus(corpus_)
+
+############################ LEXICAL ANALYZER
+# http://analyzecore.com/2014/05/11/twitter-sentiment-analysis-based-on-affective-lexicons-in-r/
+
+
+
+
+score.sentiment <- function(sentences, pos.words, neg.words, .progress='none')
+{
+  require(plyr)
+  require(stringr)
+  scores <- laply(sentences, function(sentence, pos.words, neg.words){
+    sentence <- gsub('[[:punct:]]', "", sentence)
+    sentence <- gsub('[[:cntrl:]]', "", sentence)
+    sentence <- gsub('\\d+', "", sentence)
+    sentence <- tolower(sentence)
+    word.list <- str_split(sentence, '\\s+')
+    words <- unlist(word.list)
+    pos.matches <- match(words, pos.words)
+    neg.matches <- match(words, neg.words)
+    pos.matches <- !is.na(pos.matches)
+    neg.matches <- !is.na(neg.matches)
+    score <- sum(pos.matches) - sum(neg.matches)
+    return(score)
+  }, pos.words, neg.words, .progress=.progress)
+  scores.df <- data.frame(score=scores, text=sentences)
+  return(scores.df)
+}
+# News evaluation
+data_$news <- as.factor(data_$news)
+scores <- score.sentiment(data_$news, pos.words, neg.words, .progress='text')
+
+# save evaluation
+write.csv(scores, file=paste('~/Documents/Training-Set-MDM/_scores.csv'), row.names=TRUE)
+
+# Calculate opinion
+stat <- scores
+stat$created <- data_$date
+stat$created <- as.Date(stat$created)
+stat <- mutate(stat, news=ifelse(stat$score > 0, 'positive', ifelse(stat$score < 0, 'negative', 'neutral')))
+
+library('dplyr')
+
+by.news <- group_by(stat, news, created)
+by.news <- summarise(by.news, number=n())
+write.csv(by.news, file=paste('~/Documents/Training-Set-MDM/_opin.csv'), row.names=TRUE)
+
+library('ggplot2')
+
+# Plot graph
+ggplot(by.news, aes(created, number)) + geom_line(aes(group=news, color=news), size=2) +
+  geom_point(aes(group=news, color=news), size=4) +
+  theme(text = element_text(size=18), axis.text.x = element_text(angle=90, vjust=1)) +
+  #stat_summary(fun.y = 'sum', fun.ymin='sum', fun.ymax='sum', colour = 'yellow', size=2, geom = 'line') +
+  ggtitle("Avaliacao de noticias em 2008")
+
+############################ SENTIMENT ANALYSIS WITH DOC2VEC
+# http://analyzecore.com/2017/02/08/twitter-sentiment-analysis-doc2vec/
+
+library(tidyverse)
+library(text2vec)
+library(caret)
+library(glmnet)
+library(ggrepel)
+
+##### Vectorization #####
+# ...
+
+data_senti_01 <- data_senti  %>%
+  # replacing class values
+  # mutate(pol = ifelse(pol == 0, 1/2, ifelse(pol == -1, 0, 1)))
+  mutate(pol = ifelse(pol == 0, 0, 1))
+
+# data splitting on train and test
+# set.seed(1234)
+
+prep_fun <- tolower
+tok_fun <- word_tokenizer
+# Train
+# preprocessing and tokenization
+data_senti_01$name <- as.vector(data_senti_01$name)
+it_data_senti <- itoken(data_senti_01$name,
+                    preprocessor = prep_fun,
+                    tokenizer = tok_fun,
+                    #ids = df_tweets$id,
+                    progressbar = TRUE)
+# Test
+data_$news <- as.vector(data_$news)
+it_data_test <- itoken(data_$news, 
+                  preprocessor = prep_fun, 
+                  tokenizer = tok_fun,
+                  #ids = tweets_test$id,
+                  progressbar = TRUE)
+
+# creating vocabulary and document-term matrix
+vocab <- create_vocabulary(it_data_senti)
+vectorizer <- vocab_vectorizer(vocab)
+
+# train with senti words and test with data news
+dtm_train <- create_dtm(it_data_senti, vectorizer)
+dtm_test <- create_dtm(it_data_test, vectorizer)
+
+# define tf-idf model
+tfidf <- TfIdf$new()
+
+# fit the model to the train data and transform it with the fitted model
+dtm_train_tfidf <- fit_transform(dtm_train, tfidf)
+dtm_test_tfidf <- fit_transform(dtm_test, tfidf)
+
+# train the model
+t1 <- Sys.time()
+glmnet_classifier <- cv.glmnet(x = dtm_train_tfidf,
+                               y = data_senti_01[['pol']], 
+                               family = 'binomial', 
+                               # L1 penalty
+                               alpha = 1,
+                               # interested in the area under ROC curve
+                               type.measure = "auc",
+                               # 5-fold cross-validation
+                               nfolds = 5,
+                               # high value is less accurate, but has faster training
+                               thresh = 1e-3,
+                               # again lower number of iterations for faster training
+                               maxit = 1e3)
+print(difftime(Sys.time(), t1, units = 'mins'))
+
+plot(glmnet_classifier)
+print(paste("max AUC =", round(max(glmnet_classifier$cvm), 4)))
