@@ -416,32 +416,32 @@ lex_sentiment <- function(sentences, pos_words, neg_words, .progress='none')
 }
 
 # News evaluation
-data_$news <- as.factor(data_$news)
-scores <- score.sentiment(data_$news, pos.words, neg.words, .progress='text')
+#data_$news <- as.factor(data_$news)
+#scores <- score.sentiment(data_$news, pos.words, neg.words, .progress='text')
 
 # save evaluation
-write.csv(scores, file=paste('~/Documents/Training-Set-MDM/_scores.csv'), row.names=TRUE)
+#write.csv(scores, file=paste('~/Documents/Training-Set-MDM/_scores.csv'), row.names=TRUE)
 
 # Calculate opinion
-stat <- scores
-stat$created <- data_$date
-stat$created <- as.Date(stat$created)
-stat <- mutate(stat, news=ifelse(stat$score > 0, 'positive', ifelse(stat$score < 0, 'negative', 'neutral')))
+#stat <- scores
+#stat$created <- data_$date
+#stat$created <- as.Date(stat$created)
+#stat <- mutate(stat, news=ifelse(stat$score > 0, 'positive', ifelse(stat$score < 0, 'negative', 'neutral')))
 
 library('dplyr')
 
-by.news <- group_by(stat, news, created)
-by.news <- summarise(by.news, number=n())
-write.csv(by.news, file=paste('~/Documents/Training-Set-MDM/_opin.csv'), row.names=TRUE)
+#by.news <- group_by(stat, news, created)
+#by.news <- summarise(by.news, number=n())
+#write.csv(by.news, file=paste('~/Documents/Training-Set-MDM/_opin.csv'), row.names=TRUE)
 
 library('ggplot2')
 
 # Plot graph
-ggplot(by.news, aes(created, number)) + geom_line(aes(group=news, color=news), size=2) +
-  geom_point(aes(group=news, color=news), size=4) +
-  theme(text = element_text(size=18), axis.text.x = element_text(angle=90, vjust=1)) +
+#ggplot(by.news, aes(created, number)) + geom_line(aes(group=news, color=news), size=2) +
+#  geom_point(aes(group=news, color=news), size=4) +
+#  theme(text = element_text(size=18), axis.text.x = element_text(angle=90, vjust=1)) +
   #stat_summary(fun.y = 'sum', fun.ymin='sum', fun.ymax='sum', colour = 'yellow', size=2, geom = 'line') +
-  ggtitle("Avaliacao de noticias em 2008")
+#  ggtitle("Avaliacao de noticias em 2008")
 
 ############################ SENTIMENT ANALYSIS WITH DOC2VEC
 # http://analyzecore.com/2017/02/08/twitter-sentiment-analysis-doc2vec/
@@ -455,7 +455,7 @@ library(ggrepel)
 ##### Vectorization #####
 # ...
 # Temp data set
-data_ <- data_to_test
+#data_ <- data_to_test
 
 # Remove netural value from data_senti
 neutral_senti <- grepl("0", data_senti$pol)
@@ -797,14 +797,14 @@ neutral_senti <- NULL
 df_sentiment <- lex_sentiment(data$news, pos.words, neg.words, .progress='text')
 df_sentiment$sentiment <- 0
 df_sentiment <- df_sentiment %>% mutate(sentiment = ifelse(
-  df_sentiment$score > 0, 'positive', ifelse(df_sentiment$score < 0, 'negative', 'neutral')))
+  df_sentiment$score > 0, 1, ifelse(df_sentiment$score < 0, -1, 0)))
 
 # Include sentiment and scores columns into data frame
 data$score <- df-sentiment$score
 data$sentiment <- df_sentiment$sentiment
 
 # Remove neutral sentiment from data_senti
-neutral_senti <- grepl("neutral", data$sentiment)
+neutral_senti <- grepl(0, data$sentiment)
 data <- data[!neutral_senti,]
 neutral_senti <- NULL
 
