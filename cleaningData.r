@@ -524,6 +524,7 @@ plot(glmnet_classifier)
 print(paste("max AUC =", round(max(glmnet_classifier$cvm), 4)))
 
 ################################### SENTIMENT ANALYSIS WITH OTHER MOLDELS
+# http://rpubs.com/lgendrot/sentiment
 
 library("dplyr")
 library("tm")
