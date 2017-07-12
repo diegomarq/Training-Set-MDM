@@ -1,7 +1,6 @@
-install.packages("kernlab")
-install.packages('readr')
+############################ 
+# Upload and clean data
 
-#### Upload and clean data
 library(kernlab)
 library(readr)
 
@@ -52,105 +51,8 @@ getData <- function(data, candidate) {
   return(data)
 }
 
-# tmp <- getData(gross_data[1:1000,], "Lula")
-
-############################
-
-# Verify whether exists \n caracter in data
-#install.packages("stringr")
-#library(stringr)
-#sum(grepl("\n", dadosLinear$title))
-#sum(grepl("\n", dadosLinear$body))
-#dadosLinear[grepl("[()]", dadosLinear$title),]
-# Remove words between parentheses in title
-#data_to_test$title <- gsub("\\s*\\([^\\]+\\)", "", data_to_test$title)
-# Verify words between parenthes in body
-#grep("[()]", dadosLinear$body)
-# Remove parentheses from body
-#data_to_test$news <- gsub("[(|)]", "", data_to_test$news)
-#dadosS <- dadosLinear
-
-# Get last word
-# dadosS$vehicle <- str_extract(dadosS$vehicle, '\\w+$')
-# rg_dadosT <- tail(strsplit(paste(dadosT$vehicle, ""), '-')[[1]],1)
-
-####
-# Update R version
-# insert link in sources.list at etc/apt
-# deb https://cran.rstudio.com/bin/linux/ubuntu xenial/
-# sudo apt-get remove r-base-core
-# sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
-# sudo add-apt-repository ppa:marutter/rdev
-# sudo apt-apt update
-# sudo apt-get install r-base
-# sudo apt-get install r-base-dev
-
-
-######## Test word cloud
-#install.packages("wordcloud")
-#library(tm)
-#library(wordcloud)
-#library(RColorBrewer)
-
-# Create corpus
-#dadosCorpus <- Corpus(VectorSource(dadosLinear$body))
-# Remove whitespace
-#dadosCorpus <- tm_map(dadosCorpus, stripWhitespace)
-# Converto letter for lowercase
-#dadosCorpus <- tm_map(dadosCorpus, tolower)
-# Remove punctuation
-#dadosCorpus <- tm_map(dadosCorpus, removePunctuation)
-# Remove stopwords
-#dadosCorpus <- tm_map(dadosCorpus, removeWords, stopwords("portuguese"))
-# Remove numbers
-#dadosCorpus <- tm_map(dadosCorpus, removeNumbers)
-# stem Document
-#dadosCorpus <- tm_map(dadosCorpus, stemDocument)
-  
-### Do stem?
-  
-# Term document matrix
-#dadosTM <- DocumentTermMatrix(dadosCorpus)
-# Sparse terms
-#dadosSparse <- removeSparseTerms(dadosTM, 0.99)
-
-# Convert to data frame
-#dadosDF <- as.data.frame(as.matrix(dadosSparse))
-#colnames(dadosDF) <- make.names(colnames(dadosDF))
-
-# Split into train and test
-#dadosDFTrain <- head(dadosDF, nrow(dadosLinear[700,])) # 70%
-#dadosDFTest <- head(dadosDF, nrow(dadosLinear[300,])) # 30%
-
-
-# Add to 
-
-# Frequency
-#dadosWordFreq <- sort(rowSums(dadosMatrix), decreasing = TRUE)
-# Define limit by frequency
-#dadosLimit <- quantile(dadosWordFreq, probs = 0.25)
-# Limit words
-#dadosTopFreq <- dadosWordFreq[dadosWordFreq > dadosLimit]
-# Create Data Frame with words and its frequency
-#dadosDataFrame <- data.frame(word = names(dadosTopFreq), freq = dadosTopFreq)
-# plot wordcloud
-#wordcloud(dadosDataFrame$word, dadosDataFrame$freq, random.order = FALSE, colors = brewer.pal(8, "Dark2"))
-
-
-### Sentiment analysis
-
-# Install dependencies
-#install.packages("tm")
-#install.packages("RTextTools")
-#library("RTextTools")
-#install.packages("caret")
-#library("caret")
-#install.packages("tidytext")
-#library(tidytext)
-
-# Using Bag of words, from:
-#(not) https://www.codementor.io/jadianes/data-science-python-r-sentiment-classification-machine-learning-du107otfg
-# https://stackoverflow.com/questions/32395098/r-sentiment-analysis-with-phrases-in-dictionaries?rq=1
+# Get data and not separe by candidate
+data <- getData(gross_data[1:4000,], "")
 
 # Preparing dictonary as data frame
 # Load SentiLex-PT base
@@ -159,50 +61,6 @@ getData <- function(data, candidate) {
 
 sentiWords <- readLines("~/Documents/Training-Set-MDM/SentiLex-lem-PT02.txt")
 sentiWords <- strsplit(sentiWords, "\\s*\\;")
-
-# Create columns from substrings
-#colA <- c()
-#colB <- c()
-#colC <- c()
-#colD <- c()
-#for(i in 1:length(sentiWords)) {
-#  colA <- c(colA, sentiWords[[i]][1])
-#  colB <- c(colB, sentiWords[[i]][2])
-#  colC <- c(colC, sentiWords[[i]][3])
-#  colD <- c(colD, sentiWords[[i]][4])
-#}
-#colA.1 <- colA
-#colA <- gsub("\\.\\S+", "", colA) # names
-#colA.1 <- gsub("\\S+\\=", "", colA.1) # type
-#colC <- gsub("\\S+\\=", "", colC) # polarity
-
-#n <- colA[!is.na(colA)]
-#p <- colC[!is.na(colC)]
-
-#pos.words <- c()
-#for(i in 1:length(p)) { 
-#  if(p[i] == "1") {
-#    pos.words <- c(pos.words, n[i])
-#  }
-#}
-
-#neg.words <- c()
-#for(i in 1:length(p)) { 
-#  if(p[i] == "-1") {
-#    neg.words <- c(neg.words, n[i])
-#  }
-#}
-#n <- NULL
-#p <- NULL
-#i <- NULL
-
-# Create data frame
-#data_senti <- data.frame(name=colA, type=colA.1, pol=colC)
-#colA.1 <- NULL; colA <- NULL; colB <- NULL; colC <- NULL; colD <- NULL
-# Remove NA row
-#row_has_na <- apply(data_senti, 1, function(x){any(is.na(x))})
-#data_senti <- data_senti[!row_has_na,]
-#row_has_na <- NULL
 
 get_data_senti_df <- function(document) {
   colA <- c()
@@ -286,94 +144,8 @@ pos.words <- get_pos_words_data_senti(sentiWords)
 # Get only negative words
 neg.words <- get_neg_words_data_senti(sentiWords)
 
-#############################
-
-# Make score function to compare matches from database and SentiLex-PT
-
-# test
-#vDadosLinearTit <- as.vector(dadosLinear$title)
-
-#score.sentiment = function(sentences, pos.words, neg.words, .progress='none')
-#{
-#  require(plyr)
-#  require(stringr)
-  
-  # we got a vector of sentences. plyr will handle a list or a vector as an "l" for us
-  # we want a simple array of scores back, so we use "l" + "a" + "ply" = laply:
-#  scores = laply(sentences, function(sentence, pos.words, neg.words) {
-    
-    # clean up sentences with R's regex-driven global substitute, gsub():
-#    sentence = gsub('[[:punct:]]', '', sentence)
-#    sentence = gsub('[[:cntrl:]]', '', sentence)
-#    sentence = gsub('\\d+', '', sentence)
-    # and convert to lower case:
-#    sentence = tolower(sentence)
-    
-    # split into words. str_split is in the stringr package
-#    word.list = str_split(sentence, '\\s+')
-    # sometimes a list() is one level of hierarchy too much
-#    words = unlist(word.list)
-    
-    # compare our words to the dictionaries of positive & negative terms
-#    pos.matches = match(words, pos.words)
-#    neg.matches = match(words, neg.words)
-    
-    # match() returns the position of the matched term or NA
-    # we just want a TRUE/FALSE:
-#    pos.matches = !is.na(pos.matches)
-#    neg.matches = !is.na(neg.matches)
-    
-    # and conveniently enough, TRUE/FALSE will be treated as 1/0 by sum():
-#    score = sum(pos.matches) - sum(neg.matches)
-    
-#    return(score)
-#  }, pos.words, neg.words, .progress=.progress )
-  
-#  scores.df = data.frame(score=scores, text=sentences)
-#  return(scores.df)
-#}
-
-#analysis <- score.sentiment(vDadosLinearTit, pos.words, neg.words)
-#table(analysis$text)
-
-#set.seed(1234)
-
-### Shuffle data
-#dadosLinear_matrix <- create_matrix(dadosLinear, language="portuguese", removeNumbers=TRUE,
-#                                    stemWords=TRUE, removeSparseTerms=.998, toLower = TRUE, removeStopwords = TRUE)
-
-
-#palavras_freq = sort(rowSums(dadosLinear_matrix), decreasing = TRUE)
-
-####################################
-
-#install.packages("tidyverse")
-#install.packages("tidytext")
-
-#library("tidyverse")
-#library("tidytext")
-
-####################################
-# Temp data set
-#data_ <- data_to_test
-
-# Cleanig the courpus
-#cleanCorpus <- function(corpus){
-  
-#  corpus.tmp <- tm_map(corpus, content_transformer(tolower))
-#  corpus.tmp <- tm_map(corpus.tmp, removePunctuation)
-#  corpus.tmp <- tm_map(corpus.tmp, removeNumbers)
-#  corpus.tmp <- tm_map(corpus.tmp, removeWords,stopwords("portuguese"))
-#  corpus.tmp <- tm_map(corpus.tmp, stemDocument)
-#  corpus.tmp <- tm_map(corpus.tmp, stripWhitespace)
-  
-#  return(corpus.tmp)
-#}
-
-#corpus_ <- Corpus(VectorSource(data_$news), readerControl =  list(reader=readPlain))
-#cln.corpus_ <- cleanCorpus(corpus_)
-
-############################ LEXICAL ANALYZER
+############################ 
+# LEXICAL ANALYZER
 # http://analyzecore.com/2014/05/11/twitter-sentiment-analysis-based-on-affective-lexicons-in-r/
 # https://stackoverflow.com/questions/32395098/r-sentiment-analysis-with-phrases-in-dictionaries
 
@@ -523,7 +295,8 @@ print(difftime(Sys.time(), t1, units = 'mins'))
 plot(glmnet_classifier)
 print(paste("max AUC =", round(max(glmnet_classifier$cvm), 4)))
 
-################################### SENTIMENT ANALYSIS WITH OTHER MOLDELS
+################################### 
+# SENTIMENT ANALYSIS WITH OTHER MOLDELS
 # http://rpubs.com/lgendrot/sentiment
 
 library("dplyr")
@@ -563,8 +336,6 @@ tokenize <- function(documents){
   doc_words <- strsplit(doc, " ")
   return(doc_words)
 }
-
-# tmp_news <- tokenize(tmp$news)
 
 # Build the corpus
 corpus_freq <- function(tokens, corpus_size=NULL, word_list = NULL){
@@ -606,88 +377,6 @@ corpus_freq <- function(tokens, corpus_size=NULL, word_list = NULL){
     corpusfreq$n_docs <- corpusfreq$n_docs + t_freq$n_docs.y
   }
   return(corpusfreq)
-}
-
-#corpus_senti <- function() {
-#  
-#}
-
-# corpus_tmp <- corpus_freq(tmp_news, corpus_size = 1500)
-
-# tokens[i] = document = each news
-get_sentiment_by <- function(document, pos.words, neg.words, corpus) {
-  # Create data frame out of a single document and its freq
-  doc_f <- data.frame(unlist(table(document)))
-  names(doc_f) <- c("Word", "Freq")
-  
-  #Get a data frame of the words in the corpus found in the current document
-  # Positive
-  in_doc <- intersect(doc_f$Word, pos.words)
-  pos_doc_f <- doc_f[doc_f$Word %in% in_doc, ]
-  
-  # Negative
-  in_doc <- intersect(doc_f$Word, neg.words)
-  neg_doc_f <- doc_f[doc_f$Word %in% in_doc, ]
-  
-  #Get a data frame of the words in the corpus not found in the current document
-  #Set their frequency to 0
-  dict_pos_neg <- c(pos.words, neg.words)
-  
-  # Get the words in dict that are not present in document
-  not_in_doc <- data.frame(Word=setdiff(dict_pos_neg, document))
-  not_in_doc$Freq <-0
-  
-  #Bind data frames, we now have frequencies for the words that are in our corpus, and 0s
-  #everywhere else
-  tf <- rbind(pos_doc_f, neg_doc_f)
-  tf <- rbind(tf, not_in_doc)
-  tf$Word <- as.character(tf$Word)
-  tf$Freq <- as.numeric(tf$Freq)
-  
-  #Order alphabetically again so it remains compatible with our corpus data frame
-  tf <- tf[order(tf$Word), ]
-  
-  #Calculate the tfidf
-  #log1p is the same as log(1+___)
-  log_freq <- log1p(tf$Freq)
-  log_doc_freq <- log1p(nrow(corpus)/corpus$n_docs)
-  pos_tf$tfidf <- log_freq * log_doc_freq
-  
-  #Divide by zero errors get NA values, but should be 0s
-  tf$tfidf[is.na(pos_tf$tfidf)] <- 0
-  return(tf)
-}
-
-# The dictionary has the column pol i which there is the sentiment of the word
-get_sentiment <- function(document, pos.words, neg.words, corpus_size = 1500) {
-  
-  # Tokens with data name
-  tokens_list <- tokenize(document)
-  
-  # Prepare dictionary
-  #for(i in 1:length(dict_senti[['name']])) {
-  #  name <- prepare_doc(dict_df[['name']][i])
-  #  dict_df[['name']][i] <- name
-  #}
-  
-  pos.words <- prepare_doc(pos.words)
-  neg.words <- prepare_doc(neg.words)
-  
-  # Get corpus of document
-  corpus <- corpus_freq(tokens_list, corpus_size=corpus_size)
-  
-  #Our feature matrix starts out as an all 0 matrix with N by C dimensions
-  feature_matrix <- matrix(0, length(tokens_list), nrow(corpus))
-  
-  for(i in 1:length(tokens_list)) {
-    feature_vector <- get_sentiment_by(tokens_list[[i]], pos.words, neg.words, corpus)$tfidf
-    feature_matrix[i, 1:nrow(corpus)] <- feature_vector
-  }
-  
-  #The column names are the same as the alphabetical list of words in our corpus
-  #Unnecessary step, but useful for examining the resulting feature matrix
-  colnames(feature_matrix) <- corpus$Word
-  return(data.frame(feature_matrix))
 }
 
 # Term frequency - inverse term frequency
@@ -784,44 +473,75 @@ ensemble <- function(predictions){
 
 ##### Aplicate model
 
-# Get data
-data <- getData(gross_data[1:1000,], "Lula")
-
 # Remove neutral sentiment from data_senti
-neutral_senti <- grepl("0", data_senti$pol)
-data_senti<- data_senti[!neutral_senti,]
-neutral_senti <- NULL
+#neutral_senti <- grepl("0", data_senti$pol)
+#data_senti<- data_senti[!neutral_senti,]
+#neutral_senti <- NULL
+
+library("h2o")
+h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
+         max_mem_size = "3G")  #max mem size is the maximum memory to allocate to H2O
+
+#h2o.shutdown()
+
+library("dplyr")
+
+# Divide data
+train <- sample_frac(data, .70)
+test <- setdiff(data, train)
+test <- sample_frac(test, 1)
+
+#dim(train) 4696
+#dim(valid) 2012
+#dim(test) 2012
 
 # Make sentiment analysis by a lexical approach with ngrams
 # Return data frame with score and sentiment polarity
-df_sentiment <- lex_sentiment(data$news, pos.words, neg.words, .progress='text')
+# Make lexical analysis with data to train and then use it to train the model
+df_sentiment <- lex_sentiment(train$news, pos.words, neg.words, .progress='text')
 df_sentiment$sentiment <- 0
 df_sentiment <- df_sentiment %>% mutate(sentiment = ifelse(
   df_sentiment$score > 0, 1, ifelse(df_sentiment$score < 0, -1, 0)))
 
 # Include sentiment and scores columns into data frame
-data$score <- df-sentiment$score
-data$sentiment <- df_sentiment$sentiment
+train$score <- df_sentiment$score
+train$sentiment <- df_sentiment$sentiment
+
+## The data$sentiment with score 0 means that its polarity it is unknown
+
+# Include setiment and score column in test and valid data
+#valid$score <- 0
+test$score <- 0
+
+#valid$sentiment <- 0
+test$sentiment <- 0
 
 # Remove neutral sentiment from data_senti
-neutral_senti <- grepl(0, data$sentiment)
-data <- data[!neutral_senti,]
-neutral_senti <- NULL
+#neutral_senti <- grepl(0, data$sentiment)
+#data <- data[!neutral_senti,]
+#neutral_senti <- NULL
 
 #Tokenize
-tokens <- tokenize(data$news)
+train_tokens <- tokenize(train$news)
+#valid_tokens <- tokenize(valid$news)
+test_tokens <- tokenize(test$news)
 
 #Get corpus, and calculate feature vectors
-my_features <- get_feature_vectors(tokens, corpus_size=380)
+train_features <- get_feature_vectors(train_tokens, corpus_size=2700)
+#valid_features <- get_feature_vectors(valid_tokens, corpus_size=1100)
+test_features <- get_feature_vectors(test_tokens, corpus_size=1100)
 
 #Add the dependent variable for model fitting, I.E. the pre-labeled sentiment
-my_features <- add_targets(my_features, data)
-my_features$sentiment <- as.factor(my_features$sentiment)
+#my_features <- add_targets(my_features, data)
+
+train_features$sentiment <- as.factor(train$sentiment)
+#valid_features$sentiment <- as.factor(valid$sentiment)
+test_features$sentiment <- as.factor(test$sentiment)
 
 # Divide data
-train <- sample_frac(my_features, .8)
-test <- setdiff(my_features, train)
-test <- sample_frac(test, 1)
+#train <- sample_frac(my_features, .70)
+#valid <- setdiff(my_features, train)
+#test <- sample_frac(valid, 1)
 
 ##### FORMULAS
 
