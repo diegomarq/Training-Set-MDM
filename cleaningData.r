@@ -5,11 +5,13 @@ library(kernlab)
 library(readr)
 
 # Upload data as object
-gross_data <- read_delim("~/Documents/Training-Set-MDM/noticias_2008.csv", 
+gross_data <- read_delim("~/Documents/Training-Set-MDM/noticias_2010.csv", 
                           ";", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
 
+#dim(gross_data) 17131
+
 # Prepare and limit the data to the candidate searched
-getData <- function(data, candidate) {
+getData <- function(data) {
   # Drop columns
   data <- data[,c("X2", "X3", "X4", "X5", "X6", "X7", "X9", "X10")]
   
@@ -44,15 +46,31 @@ getData <- function(data, candidate) {
   # Remove UTC from date column
   data$date <- gsub("UTC", "", data$date)
   
-  # Separe news that appears the candidate
+  return(data)
+}
+
+# Separe news that appears the candidate
+filter_by_candidate <- function(data, candidate) {
+  
   candidate_news <- grepl(candidate, data$news, ignore.case = TRUE)  
   data <- data[candidate_news,]
   
   return(data)
 }
 
-# Get data and not separe by candidate
-data <- getData(gross_data[1:4000,], "")
+# Filter data by the category wanted
+filter_by_category <- function(data, category) {
+  
+  category_rows <- grepl(category, data$category, ignore.case = TRUE)  
+  data <- data[category_rows,]
+  
+  return(data)
+}
+
+# Prepare data
+data <- getData(gross_data)
+# Filter
+data <- filter_by_candidate(data, 'lula')
 
 # Preparing dictonary as data frame
 # Load SentiLex-PT base
