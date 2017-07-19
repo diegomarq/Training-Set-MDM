@@ -25,14 +25,12 @@ clean_data <- function(data) {
   
   # Get data frame without na rows
   data <- data[!row_has_na,]
-  row_has_na <- NULL
   
   # Verify NULL elements
   null_vector <- !grepl("NULL", data$category, ignore.case = TRUE)
   
   # Remove data frame with null element in category row
   data<- data[null_vector,]
-  null_vector <- NULL
   
   # Count and remove duplicated rows
   data <- data[!duplicated(data),]
@@ -84,6 +82,7 @@ prepare_doc <- function(documents){
 
 # Prepara data$news
 data$news <- prepare_doc(data$news)
+data$title <- prepare_doc(data$title)
 
 # Filter data by the category wanted
 filter_by_category <- function(data, category) {
@@ -95,7 +94,17 @@ filter_by_category <- function(data, category) {
 }
 
 # POLITICA
-data_politic <- filter_by_category(data, 'POLÍTICA')
+data_op <- filter_by_category(data, 'OPINIÃO')
+pol_rows <- !grepl("ELEIÇÕES E POLÍTICA", data_politic$category, ignore.case = TRUE)
+
+# Remove data frame with null element in category row
+data_politic<- data_politic[pol_rows,]
+pol_rows <- NULL
+
+data_op_pol <- rbind(data_politic, data_op)
+
+write.csv(data_op_pol, file=paste('~/Documents/Training-Set-MDM/noticias_op_pol.csv'),
+          row.names=TRUE)
 #dim(data_politic) 4114
 
 ##########################
@@ -196,7 +205,7 @@ tfidf <- function(document, corpus){
 get_feature_vectors <- function(tokens_list, corpus_size=1500, corpus=NULL){
   
   require("foreach")
-  require("doParallel")
+  #require("doParallel")
   
   if(is.null(corpus)){
     corpus <- corpus_freq(tokens_list, corpus_size=corpus_size)
@@ -223,8 +232,8 @@ get_feature_vectors <- function(tokens_list, corpus_size=1500, corpus=NULL){
 }
 
 # Tokenize data_politic$news
-data_politic_tmp <- data_politic[1:100,]
-data_pol_tokens <- tokenize(data_politic_tmp$news)
+#data_politic_tmp <- data_politic
+data_pol_tokens <- tokenize(data_politic$news)
 
 # Get vector of sizes from tokens_list
 vector_of_size <- function(tokens_list) {
@@ -237,11 +246,11 @@ vector_of_size <- function(tokens_list) {
 
 # Get median
 tokens_size <- vector_of_size(data_pol_tokens)
-size <- median(tokens_size) # 365
+size <- median(tokens_size) # 356
 
 
 #Get corpus, and calculate feature vectors from data_politic$news as data_pol_tokens
-data_pol_features <- get_feature_vectors(data_pol_tokens, corpus_size=365)
+data_pol_features <- get_feature_vectors(data_pol_tokens, corpus_size=356)
 
 ##### Helper functions
 
@@ -259,8 +268,8 @@ ensemble <- function(predictions){
   for(i in 1:length(predictions)){
     votes[i,] <- ifelse(predictions[[i]] == "POLÍTICA",1,0)
   }
-  #vote_decision <- colSums(votes)/nrow(votes)
-  #vote_decision <- ifelse(vote_decision >= .5,1, 0)
+  vote_decision <- colSums(votes)/nrow(votes)
+  vote_decision <- ifelse(vote_decision >= .5,1, 0)
   
   return(votes)
 }
@@ -270,37 +279,12 @@ numeric_category <- function(document) {
   for(i in 1:length(document)){
     votes[i,] <- ifelse(document[[i]] == "POLÍTICA",1,0)
   }
+  vote_decision <- colSums(votes)/nrow(votes)
+  vote_decision <- ifelse(vote_decision >= .5,1, 0)
   return(votes)
 }
 
 ##### Aplicate model
-
-library("h2o")
-h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
-         max_mem_size = "3G")  #max mem size is the maximum memory to allocate to H2O
-
-#h2o.shutdown()
-
-library("dplyr")
-
-# Divide data
-#train <- sample_frac(data, .70)
-#test <- setdiff(data, train)
-#test <- sample_frac(test, 1)
-
-#dim(train) 4696
-#dim(valid) 2012
-#dim(test) 2012
-
-#Tokenize
-#train_tokens <- tokenize(train$news)
-#test_tokens <- tokenize(test$news)
-
-
-#test_features <- get_feature_vectors(test_tokens, corpus_size=1100)
-
-#Add the dependent variable for model fitting, I.E. the pre-labeled sentiment
-#my_features <- add_targets(my_features, data)
 
 data_pol_features$category <- data_politic_tmp$category
 data_pol_features$category <- as.factor(data_politic_tmp$category)
@@ -332,20 +316,22 @@ m_randomforest <- ranger(dependent.variable.name="sentiment", data=train, write.
 #logistic regressions
 m_logit <- glm(form, data=train, family=binomial(link='logit'))
 #Support vector machine
-m_svm <- svm(form, data=train, type="C")
+m_svm <- svm(form, data=train, type="C", probability = TRUE)
 
 ##### Aplicate
 
-pred_nnet <- predict(m_nnet, test, type="class")
-pred_svm <- predict(m_svm, test)
+#pred_nnet <- predict(m_nnet, test, type="class")
+pred_svm <- predict(m_svm, test, probability = TRUE)
 
-library(pROC)
-ens <- ensemble(pred_svm)
-
-#ens_test_category <- numeric_category(test$category)
+#library(pROC)
+ens <- ensemble(list(pred_svm))
+ens_test_category <- numeric_category(list(test$category))
+sensitivity(table(as.vector(ens_test_category), as.vector(ens)))
 library(caret)
-roc_obj <- roc(test$category,pred_svm)
-#auc(roc_obj)
+confusionMatrix(test$category, pred_svm)
+
+roc_obj <- roc(as.vector(ens_test_category), as.vector(ens))
+auc(roc_obj)
 
 library(ggplot2)
 ggplot(data=filter(test,sentiment), aes(x=date, y=sentiment)) +
@@ -354,3 +340,44 @@ ggplot(data=filter(test,sentiment), aes(x=date, y=sentiment)) +
   xlab("Date") +
   ylab("Sentiment (afinn)") +
   ggtitle("Teste")
+
+############ h2o
+# https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/glm/glm_h2oworld_demo.Rmd
+library("h2o")
+h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
+         max_mem_size = "8G")  #max mem size is the maximum memory to allocate to H2O
+
+loan_csv <- "/home/diego/Documents/Training-Set-MDM/noticias_op_pol.csv"
+data_h2o <- h2o.importFile(loan_csv)  # 163,987 rows x 15 columns
+dim(data)
+
+data_h2o$category <- as.factor(data_h2o$category)
+
+h2o.levels(data_h2o$category)
+#"ELEIÇÕES E POLÍTICA" "POLÍTICA"
+
+splits <- h2o.splitFrame(data = data_h2o, 
+                         ratios = c(0.7, 0.15),  #partition data into 70%, 15%, 15% chunks
+                         seed = 1)  #setting a seed will guarantee reproducibility
+train <- splits[[1]]
+valid <- splits[[2]]
+test <- splits[[3]]
+
+nrow(train)  # 700
+nrow(valid) # 150
+nrow(test)  # 151
+
+y <- "category"
+x <- setdiff(names(data), c(y, "int_rate"))  #remove the interest rate column because it's correlated with the outcome
+print(x)
+
+glm_fit1 <- h2o.deeplearning(x = x,
+                            y = y,
+                            training_frame = train,
+                            model_id = "dl_fit1",
+                            seed = 1)
+
+glm_perf1 <- h2o.performance(model = glm_fit1,
+                             newdata = test)
+
+h2o.auc(glm_perf1)

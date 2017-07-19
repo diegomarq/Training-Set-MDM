@@ -496,18 +496,16 @@ ensemble <- function(predictions){
 #data_senti<- data_senti[!neutral_senti,]
 #neutral_senti <- NULL
 
-library("h2o")
-h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
-         max_mem_size = "3G")  #max mem size is the maximum memory to allocate to H2O
+
 
 #h2o.shutdown()
 
-library("dplyr")
+#library("dplyr")
 
 # Divide data
-train <- sample_frac(data, .70)
-test <- setdiff(data, train)
-test <- sample_frac(test, 1)
+#train <- sample_frac(data, .70)
+#test <- setdiff(data, train)
+#test <- sample_frac(test, 1)
 
 #dim(train) 4696
 #dim(valid) 2012
@@ -516,23 +514,23 @@ test <- sample_frac(test, 1)
 # Make sentiment analysis by a lexical approach with ngrams
 # Return data frame with score and sentiment polarity
 # Make lexical analysis with data to train and then use it to train the model
-df_sentiment <- lex_sentiment(train$news, pos.words, neg.words, .progress='text')
-df_sentiment$sentiment <- 0
-df_sentiment <- df_sentiment %>% mutate(sentiment = ifelse(
-  df_sentiment$score > 0, 1, ifelse(df_sentiment$score < 0, -1, 0)))
+#df_sentiment <- lex_sentiment(train$news, pos.words, neg.words, .progress='text')
+#df_sentiment$sentiment <- 0
+#df_sentiment <- df_sentiment %>% mutate(sentiment = ifelse(
+#  df_sentiment$score > 0, 1, ifelse(df_sentiment$score < 0, -1, 0)))
 
 # Include sentiment and scores columns into data frame
-train$score <- df_sentiment$score
-train$sentiment <- df_sentiment$sentiment
+#train$score <- df_sentiment$score
+#train$sentiment <- df_sentiment$sentiment
 
 ## The data$sentiment with score 0 means that its polarity it is unknown
 
 # Include setiment and score column in test and valid data
 #valid$score <- 0
-test$score <- 0
+#test$score <- 0
 
 #valid$sentiment <- 0
-test$sentiment <- 0
+#test$sentiment <- 0
 
 # Remove neutral sentiment from data_senti
 #neutral_senti <- grepl(0, data$sentiment)
@@ -540,21 +538,21 @@ test$sentiment <- 0
 #neutral_senti <- NULL
 
 #Tokenize
-train_tokens <- tokenize(train$news)
+#train_tokens <- tokenize(train$news)
 #valid_tokens <- tokenize(valid$news)
-test_tokens <- tokenize(test$news)
+#test_tokens <- tokenize(test$news)
 
 #Get corpus, and calculate feature vectors
-train_features <- get_feature_vectors(train_tokens, corpus_size=2700)
+#train_features <- get_feature_vectors(train_tokens, corpus_size=2700)
 #valid_features <- get_feature_vectors(valid_tokens, corpus_size=1100)
-test_features <- get_feature_vectors(test_tokens, corpus_size=1100)
+#test_features <- get_feature_vectors(test_tokens, corpus_size=1100)
 
 #Add the dependent variable for model fitting, I.E. the pre-labeled sentiment
 #my_features <- add_targets(my_features, data)
 
-train_features$sentiment <- as.factor(train$sentiment)
+#train_features$sentiment <- as.factor(train$sentiment)
 #valid_features$sentiment <- as.factor(valid$sentiment)
-test_features$sentiment <- as.factor(test$sentiment)
+#test_features$sentiment <- as.factor(test$sentiment)
 
 # Divide data
 #train <- sample_frac(my_features, .70)
@@ -564,34 +562,34 @@ test_features$sentiment <- as.factor(test$sentiment)
 ##### FORMULAS
 
 #Formula for each model
-form <- as.formula(paste("sentiment~", paste(setdiff(names(test), c("sentiment")), collapse="+")))
+#form <- as.formula(paste("sentiment~", paste(setdiff(names(test), c("sentiment")), collapse="+")))
 
-library("nnet")
-library("neuralnet")
+#library("nnet")
+#library("neuralnet")
 
 # Single hidden-layer neural network of size 10
-m_nnet <- nnet(form, data=train, size=10, MaxNWts=100000)
+#m_nnet <- nnet(form, data=train, size=10, MaxNWts=100000)
 #Naive Bayes algorithm with laplace smoothing
-m_nbayes <- naiveBayes(form, data=train, laplace=1000, threshold=.5)
+#m_nbayes <- naiveBayes(form, data=train, laplace=1000, threshold=.5)
 #Random forest
-m_randomforest <- ranger(dependent.variable.name="sentiment", data=train, write.forest=TRUE)
+#m_randomforest <- ranger(dependent.variable.name="sentiment", data=train, write.forest=TRUE)
 #logistic regressions
-m_logit <- glm(form, data=train, family=binomial(link='logit'))
+#m_logit <- glm(form, data=train, family=binomial(link='logit'))
 #Support vector machine
-m_svm <- svm(form, data=train, type="C")
+#m_svm <- svm(form, data=train, type="C")
 
 ##### Aplicate
 
-pred_nnet <- predict(m_nnet, test, type="class")
+#pred_nnet <- predict(m_nnet, test, type="class")
 
-ens <- ensemble(list(pred_nnet))
-table(test$sentiment, ens)
-sensitivity(table(test$sentiment, ens))
+#ens <- ensemble(list(pred_nnet))
+#table(test$sentiment, ens)
+#sensitivity(table(test$sentiment, ens))
 
-library(ggplot2)
-ggplot(data=filter(test,sentiment), aes(x=date, y=sentiment)) +
-  geom_line() + 
-  geom_point() +
-  xlab("Date") +
-  ylab("Sentiment (afinn)") +
-  ggtitle("Teste")
+#library(ggplot2)
+#ggplot(data=filter(test,sentiment), aes(x=date, y=sentiment)) +
+#  geom_line() + 
+#  geom_point() +
+#  xlab("Date") +
+#  ylab("Sentiment (afinn)") +
+#  ggtitle("Teste")
