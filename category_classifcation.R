@@ -344,40 +344,68 @@ ggplot(data=filter(test,sentiment), aes(x=date, y=sentiment)) +
 ############ h2o
 # https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/glm/glm_h2oworld_demo.Rmd
 library("h2o")
-h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
-         max_mem_size = "8G")  #max mem size is the maximum memory to allocate to H2O
+#h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
+#         max_mem_size = "8G")  #max mem size is the maximum memory to allocate to H2O
+
+h2o.init(nthreads=-1, max_mem_size="2G")
+h2o.removeAll() ## clean slate - just in case the cluster was already running
 
 loan_csv <- "/home/diego/Documents/Training-Set-MDM/noticias_op_pol.csv"
-data_h2o <- h2o.importFile(loan_csv)  # 163,987 rows x 15 columns
+df <- h2o.importFile(path = normalizePath(loan_csv))
+#data_h2o <- h2o.importFile(loan_csv)  # 163,987 rows x 15 columns
 dim(data)
 
-data_h2o$category <- as.factor(data_h2o$category)
+df$category <- as.factor(df$category)
+df$news <- as.factor(df$news)
 
-h2o.levels(data_h2o$category)
-#"ELEIÇÕES E POLÍTICA" "POLÍTICA"
+df_model <- df[,c(7,9)]
 
-splits <- h2o.splitFrame(data = data_h2o, 
-                         ratios = c(0.7, 0.15),  #partition data into 70%, 15%, 15% chunks
-                         seed = 1)  #setting a seed will guarantee reproducibility
-train <- splits[[1]]
-valid <- splits[[2]]
-test <- splits[[3]]
+splits <- h2o.splitFrame(
+  df_model,           ##  splitting the H2O frame we read above
+  c(0.6,0.2),   ##  create splits of 60% and 20%; 
+  ##  H2O will create one more split of 1-(sum of these parameters)
+  ##  so we will get 0.6 / 0.2 / 1 - (0.6+0.2) = 0.6/0.2/0.2
+  seed=1234) ##  setting a seed will ensure reproducible results (not R's seed)
 
-nrow(train)  # 700
-nrow(valid) # 150
-nrow(test)  # 151
+train <- h2o.assign(splits[[1]], "train.hex")   
+## assign the first result the R variable train
+## and the H2O name train.hex
+valid <- h2o.assign(splits[[2]], "valid.hex")   ## R valid, H2O valid.hex
+test <- h2o.assign(splits[[3]], "test.hex") ## R test, H2O test.hex
 
 y <- "category"
-x <- setdiff(names(data), c(y, "int_rate"))  #remove the interest rate column because it's correlated with the outcome
-print(x)
+x <- "news"
 
-glm_fit1 <- h2o.deeplearning(x = x,
+## run our first predictive model
+rf1 <- h2o.randomForest(
+  training_frame = train,
+  validation_frame = valid,
+  x="category",
+  y="news",
+  model_id = "rf_covType_v1",
+  ntrees = 1,
+  stopping_rounds = 2,
+  score_each_iteration = T,
+  seed = 10000)
+
+dl_fit3 <- h2o.deeplearning(x = x,
                             y = y,
                             training_frame = train,
-                            model_id = "dl_fit1",
+                            model_id = "dl_fit3",
+                            validation_frame = valid,  #in DL, early stopping is on by default
+                            epochs = 10,
+                            hidden = c(5,5),
+                            score_interval = 1,           #used for early stopping
+                            stopping_rounds = 3,          #used for early stopping
+                            stopping_metric = "AUC",      #used for early stopping
+                            stopping_tolerance = 0.0005,  #used for early stopping
                             seed = 1)
 
-glm_perf1 <- h2o.performance(model = glm_fit1,
-                             newdata = test)
+dl_perf3 <- h2o.performance(model = dl_fit3,
+                            newdata = test)
 
-h2o.auc(glm_perf1)
+h2o.auc(dl_perf3)
+
+plot(dl_fit3, 
+     timestep = "epochs", 
+     metric = "AUC")
