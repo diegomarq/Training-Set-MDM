@@ -4,7 +4,7 @@
 get_data <- function() {
   require(kernlab)
   require(readr)
-  data <- read_delim("~/Documents/Training-Set-MDM/noticias_2010.csv", 
+  data <- read_delim("~/Documents/Training-Set-MDM/Noticias-2016.csv", 
                          ";", escape_double = FALSE, col_names = FALSE, trim_ws = TRUE)
   return(data)
 }
@@ -94,16 +94,31 @@ filter_by_category <- function(data, category) {
 }
 
 # POLITICA
-data_op <- filter_by_category(data, 'OPINIÃO')
-pol_rows <- !grepl("ELEIÇÕES E POLÍTICA", data_politic$category, ignore.case = TRUE)
-
+data_politic <- filter_by_category(data, 'POLÍTICA')
+pol_rows <- !grepl("OBSERVADOR DA POLÍTICA", data_politic$category, ignore.case = TRUE)
 # Remove data frame with null element in category row
 data_politic<- data_politic[pol_rows,]
 pol_rows <- NULL
 
-data_op_pol <- rbind(data_politic, data_op)
+#ECONOMIA
+data_economy <- filter_by_category(data, 'ECONOMÍA')
+ec_rows <- !grepl("ECONOMÍA MERCADOS", data_economy$category, ignore.case = TRUE)
+# Remove data frame with null element in category row
+data_economy <- data_economy[ec_rows,]
+ec_rows <- NULL
 
-write.csv(data_op_pol, file=paste('~/Documents/Training-Set-MDM/noticias_op_pol.csv'),
+
+#CULTURA
+data_sport <- filter_by_category(data, 'ESPORTES')
+sp_rows <- !grepl("* ESPORTES", data_sport$category, ignore.case = TRUE)
+# Remove data frame with null element in category row
+data_sport <- data_sport[sp_rows,]
+sp_rows <- NULL
+
+data_pol_ec_esp <- rbind(data_politic, data_economy)
+data_pol_ec_esp <- rbind(data_pol_ec_esp, data_sport)
+
+write.csv(data_pol_ec_esp, file=paste('~/Documents/Training-Set-MDM/Noticias-2016-pol-ec-esp.csv'),
           row.names=TRUE)
 #dim(data_politic) 4114
 
@@ -347,10 +362,10 @@ library("h2o")
 #h2o.init(nthreads = -1, #Number of threads -1 means use all cores on your machine
 #         max_mem_size = "8G")  #max mem size is the maximum memory to allocate to H2O
 
-h2o.init(nthreads=-1, max_mem_size="2G")
+h2o.init(nthreads=-1, max_mem_size="8G")
 h2o.removeAll() ## clean slate - just in case the cluster was already running
 
-loan_csv <- "/home/diego/Documents/Training-Set-MDM/noticias_op_pol.csv"
+loan_csv <- "/home/diego/Documents/Training-Set-MDM/Noticias-2016-pol-ec-esp.csv"
 df <- h2o.importFile(path = normalizePath(loan_csv))
 #data_h2o <- h2o.importFile(loan_csv)  # 163,987 rows x 15 columns
 dim(data)
@@ -388,18 +403,26 @@ rf1 <- h2o.randomForest(
   score_each_iteration = T,
   seed = 10000)
 
+glm_fit1 = h2o.glm(training_frame = train,
+             validation_frame = valid,
+             x = x,
+             y = y,
+             family='multinomial',
+             solver='L_BFGS')
+
 dl_fit3 <- h2o.deeplearning(x = x,
                             y = y,
                             training_frame = train,
                             model_id = "dl_fit3",
                             validation_frame = valid,  #in DL, early stopping is on by default
-                            epochs = 10,
-                            hidden = c(5,5),
+                            epochs = 20,
+                            hidden = c(10,10),
                             score_interval = 1,           #used for early stopping
                             stopping_rounds = 3,          #used for early stopping
                             stopping_metric = "AUC",      #used for early stopping
                             stopping_tolerance = 0.0005,  #used for early stopping
-                            seed = 1)
+                            seed = 1,
+                            distribution = "multinomial")
 
 dl_perf3 <- h2o.performance(model = dl_fit3,
                             newdata = test)
